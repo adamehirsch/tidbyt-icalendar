@@ -1,0 +1,7 @@
+*creds.json
+*png
+*gif
+*jpg
+.vscode
+*token*
+.DS_Store
