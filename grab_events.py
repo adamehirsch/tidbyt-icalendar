@@ -46,7 +46,8 @@ SCOPES = [
     "https://www.googleapis.com/auth/calendar.events.readonly",
 ]
 
-CREDS_FILE = "creds.json"
+CLIENT_AUTH_FILE = "credentials.json"
+TOKEN_FILE = "token.json"
 
 HEADERS = {
     "Content-Type": "application/json",
@@ -123,18 +124,18 @@ def get_credentials():
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
     # time.
-    if os.path.exists(CREDS_FILE):
-        creds = Credentials.from_authorized_user_file(CREDS_FILE, SCOPES)
+    if os.path.exists(TOKEN_FILE):
+        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         logging.debug("no valid creds: refreshing")
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file(CLIENT_AUTH_FILE, SCOPES)
             creds = flow.run_local_server(port=0)
         # Save the credentials for the next run
-        with open(CREDS_FILE, "w") as token:
+        with open(TOKEN_FILE, "w") as token:
             token.write(creds.to_json())
     return creds
 
