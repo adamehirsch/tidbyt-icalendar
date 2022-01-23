@@ -1,24 +1,18 @@
 #!/usr/bin/env python
 
 
+import argparse
 import base64
 import datetime
-import enum
 import json
 import logging
-import os.path
-from pprint import pformat, pprint
-import argparse
+from pprint import pformat
+
 import arrow
+import recurring_ical_events
 import requests
-
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from PIL import Image, ImageDraw, ImageFont
-
+from icalendar import Calendar
+from PIL import Image, ImageDraw, ImageFont, ImageSequence
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--hours", type=int, default=24)
@@ -34,7 +28,7 @@ logging.basicConfig(
 #  - "tidbyt_installation" string (the installation ID for this app)
 #  - "tidbyt_id" string (the ID for the target Tidbyt display)
 #  - "tidbyt_key" string (the API key to auth for this Tidbyt)
-#  - "calendars" a list of Google Calendar ids to poll for events
+#  - "calendars" a list of iCalendar URLs to poll for events
 
 TC_FILE = open("tidybt_creds.json")
 TIDBYT_CREDS = json.load(TC_FILE)
@@ -47,24 +41,11 @@ LIST_URL = f"{BASE_URL}/installations"
 PUSH_URL = f"{BASE_URL}/push"
 
 EVENTS_PIC = "todays_events.gif"
-FONT_FILE = "fonts/5x8.pil"
+FONT_FILE = "fonts/4x6.pil"
 FONT = ImageFont.load(FONT_FILE)
 
 IMG_WIDTH = 64
 IMG_HEIGHT = 32
-
-SCOPES = [
-    "https://www.googleapis.com/auth/calendar.events.owned.readonly",
-    "https://www.googleapis.com/auth/calendar.events.readonly",
-]
-
-# Following the quickstart steps at https://developers.google.com/calendar/api/quickstart/python
-# the CLIENT_AUTH_FILE is the persistent creds for this application, as acquired by
-# the steps at https://developers.google.com/workspace/guides/create-credentials
-CLIENT_AUTH_FILE = "credentials.json"
-
-# the TOKEN_FILE is refreshed and rewritten as needed by the client auth process
-TOKEN_FILE = "token.json"
 
 HEADERS = {
     "Content-Type": "application/json",
@@ -72,30 +53,37 @@ HEADERS = {
 }
 
 
+def always_datetime(d):
+    return arrow.get(d.decoded("dtstart"))
+
+
 def draw_push_in(events, image_name):
+    events_in_fours = make_event_fours(events)
     images = []
-    for n in range(16):
-        img = Image.new("RGBA", (IMG_WIDTH, IMG_HEIGHT), color=(0, 0, 0, 0))
-        d = ImageDraw.Draw(img)
-        for i, e in enumerate(events):
-            d.text((64 - n * 4, 1 + 7 * i), e, font=FONT, fill=(250, 250, 250))
-        images.append(img)
+
+    durations = [75] * 12 + [125] * 3 + [4000]
+
+    for i, four_events in enumerate(events_in_fours):
+        for n in range(16):
+            img = Image.new("RGBA", (IMG_WIDTH, IMG_HEIGHT), color=(0, 0, 0, 0))
+            d = ImageDraw.Draw(img)
+            for p, e in enumerate(four_events):
+                d.text((64 - n * 4, 1 + 7 * p), e, font=FONT, fill=(250, 250, 250))
+            images.append(img)
 
     images[0].save(
         image_name,
         save_all=True,
         append_images=images[1:],
         optimize=False,
-        duration=100,
+        duration=durations * (i + 1),
         loop=1,
     )
+
     return images
 
 
-def draw_image(events, image_name):
-
-    images = []
-
+def make_event_fours(events):
     fours = []
     a = []
     # group events in quartets that fit on the screen
@@ -105,8 +93,14 @@ def draw_image(events, image_name):
         if ((i + 1) % 4 == 0) or i == len(events) - 1:
             fours.append(a)
             a = []
+    return fours
 
-    for i, four_events in enumerate(fours):
+
+def draw_image(events, image_name):
+
+    images = []
+    events_in_fours = make_event_fours(events)
+    for i, four_events in enumerate(events_in_fours):
         logging.debug(f"making image {i} with {pformat(four_events)}")
         img = Image.new("RGBA", (IMG_WIDTH, IMG_HEIGHT), color=(0, 0, 0, 0))
 
@@ -124,7 +118,7 @@ def draw_image(events, image_name):
             save_all=True,
             append_images=images[1:],
             optimize=False,
-            duration=1000,
+            duration=3000,
             loop=0,
         )
 
@@ -153,85 +147,62 @@ def remove_installation(name):
     )
 
 
-def get_credentials():
-    creds = None
-    # The file token.json stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists(TOKEN_FILE):
-        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        logging.debug("no valid creds: refreshing")
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(CLIENT_AUTH_FILE, SCOPES)
-            creds = flow.run_local_server(port=0)
-        # Save the credentials for the next run
-        with open(TOKEN_FILE, "w") as token:
-            token.write(creds.to_json())
-    return creds
+def fetch_events(hours=24):
 
+    now = datetime.datetime.utcnow()
+    then = now + datetime.timedelta(hours=hours)
 
-def fetch_events(creds, hours=24):
-    try:
-        service = build("calendar", "v3", credentials=creds)
+    all_events = []
+    printable_events = []
 
-        # Call the Calendar API
-        right_now = datetime.datetime.utcnow()
-        now = right_now.isoformat() + "Z"  # 'Z' indicates UTC time
-        twentyFourHours = (
-            right_now + datetime.timedelta(hours=hours)
-        ).isoformat() + "Z"  # 'Z' indicates UTC time
+    for cal in TIDBYT_CREDS["calendars"]:
 
-        printable_events = []
+        logging.debug(f"==> checking calendar {cal}")
 
-        for cal in TIDBYT_CREDS["calendars"]:
-            logging.debug(f"==> checking calendar {cal}")
-            events_result = (
-                service.events()
-                .list(
-                    calendarId=cal,
-                    timeMin=now,
-                    timeMax=twentyFourHours,
-                    # maxResults=10,
-                    singleEvents=True,
-                    orderBy="startTime",
-                )
-                .execute()
+        raw_cal = requests.get(cal).text
+        ical = Calendar.from_ical(raw_cal)
+        events = recurring_ical_events.of(ical).between(now.date(), then.date())
+
+        logging.debug(f" - adding {len(events)} events")
+        all_events += events
+
+    # sort events by their starttime, coercing dates to datetimes
+    all_events.sort(key=always_datetime)
+
+    for event in all_events:
+        summary = event.decoded("summary").decode("utf-8")
+
+        start = event["DTSTART"].dt
+        duration = event["DTEND"].dt - event["DTSTART"].dt
+
+        starttime = ""
+        if duration.total_seconds() < 86400:
+            starthour = (
+                arrow.get(start).to("US/Central").format("h")
+                if isinstance(start, datetime.datetime)
+                else arrow.get(start).format("h")
             )
-            events = events_result.get("items", [])
-            # Prints the start and name of the next 10 events
-            for event in events:
-                # start = event["start"].get("dateTime", event["start"].get("date"))
+            sm = arrow.get(start).to("US/Central").format("mm")
+            startminute = "" if sm == "00" else sm
 
-                if start := event["start"].get("dateTime", ""):
-                    suffix = "p"
-                    if arrow.get(start).format("a") == "am":
-                        suffix = "a"
-                    hour = arrow.get(start).to("US/Central").format("h")
+            suffix = "p"
+            if arrow.get(start).to("US/Central").format("a") == "am":
+                suffix = "a"
+            starttime += starthour + startminute + suffix + " "
+        printable_line = f"{starttime}{summary}"
+        logging.debug(f" - Adding event {printable_line}")
+        printable_events.append(printable_line)
 
-                    start = (
-                        arrow.get(start).to("US/Central").format("hmm") + suffix + " "
-                    )
-
-                printable_events.append(f"{start}{event['summary']}")
-
-        logging.debug(pformat(printable_events))
-        return printable_events
-    except HttpError as error:
-        logging.error(f"An error occurred: {error}")
-        return []
+    logging.debug(pformat(printable_events))
+    return printable_events
 
 
 def main():
-    creds = get_credentials()
-    events = fetch_events(creds, hours=args.hours)
+    events = fetch_events(hours=args.hours)
     if events:
         logging.debug("posting events to Tidbyt")
-        draw_image(events, EVENTS_PIC)
-        draw_push_in(events, "testing.gif")
+        # draw_image(events, EVENTS_PIC)
+        draw_push_in(events, EVENTS_PIC)
         post_image(EVENTS_PIC)
     else:
         logging.debug("no events to post")
