@@ -10,6 +10,8 @@ I wanted to be able to put events from several of my family's shared calendars u
   - `tidbyt_installation`: the installation ID for the app you're installing, which can be any arbitrary string
   - `tidbyt_id`: the ID of your Tidbyt display, as acquired from your Tidbyt mobile app
   - `tidbyt_key`: the authentication key for your Tidbyt, also acquired from your Tidbyt mobile app
+  - `font`: (defaults to `fonts/4x6.pil`) path to the font to use while drawing the images
+  - `number_of_lines`: (defaults to `4`) how many lines of teeny text to put on the images
   - `calendars`: a list of URLs to ICS (iCalendar) records you'd like the script to look at when it runs
     - If you're using Google Calendar, you'll find that individual calendars have a settings value called "Secret Address in iCal format" -- that's what I'm using here.
 

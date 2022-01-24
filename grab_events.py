@@ -42,8 +42,9 @@ PUSH_URL = f"{BASE_URL}/push"
 EVENTS_PIC = "todays_events.gif"
 
 # Fonts
-FONT_FILE = "fonts/4x6.pil"
+FONT_FILE = TIDBYT_CREDS.get("font", "fonts/4x6.pil")
 FONT = ImageFont.load(FONT_FILE)
+NUMBER_OF_LINES = TIDBYT_CREDS.get("number_of_lines", 4)
 
 IMG_WIDTH = 64
 IMG_HEIGHT = 32
@@ -59,18 +60,24 @@ def always_datetime(d):
 
 
 def draw_push_in(events, image_name):
-    events_in_fours = make_event_fours(events)
+    # this function makes a splashy sidways-pull-in image
     images = []
-
+    # the durations of the animation steps
     durations = [75] * 12 + [125] * 3 + [4000]
 
-    for i, four_events in enumerate(events_in_fours):
-        for n in range(16):
-            img = Image.new("RGBA", (IMG_WIDTH, IMG_HEIGHT), color=(0, 0, 0, 0))
-            d = ImageDraw.Draw(img)
-            for p, e in enumerate(four_events):
-                d.text((64 - n * 4, 1 + 7 * p), e, font=FONT, fill=(250, 250, 250))
-            images.append(img)
+    drawing_events = []
+    for i, e in enumerate(events):
+        drawing_events.append(e)
+
+        if len(drawing_events) == NUMBER_OF_LINES or i == len(events) - 1:
+            logging.debug(f"animating: {drawing_events}")
+            for n in range(16):
+                img = Image.new("RGBA", (IMG_WIDTH, IMG_HEIGHT), color=(0, 0, 0, 0))
+                d = ImageDraw.Draw(img)
+                for p, e in enumerate(drawing_events):
+                    d.text((64 - n * 4, 1 + 7 * p), e, font=FONT, fill=(250, 250, 250))
+                images.append(img)
+            drawing_events = []
 
     images[0].save(
         image_name,
@@ -84,33 +91,22 @@ def draw_push_in(events, image_name):
     return images
 
 
-def make_event_fours(events):
-    fours = []
-    a = []
-    # group events in quartets that fit on the screen
-    for i, v in enumerate(events):
-        logging.debug(f"{i} {v}")
-        a.append(v)
-        if ((i + 1) % 4 == 0) or i == len(events) - 1:
-            fours.append(a)
-            a = []
-    return fours
-
-
 def draw_image(events, image_name):
-
+    # this function makes a simple flash-through image
     images = []
-    events_in_fours = make_event_fours(events)
-    for i, four_events in enumerate(events_in_fours):
-        logging.debug(f"making image {i} with {pformat(four_events)}")
-        img = Image.new("RGBA", (IMG_WIDTH, IMG_HEIGHT), color=(0, 0, 0, 0))
 
-        d = ImageDraw.Draw(img)
-        i = 0
-        for e in four_events:
-            d.text((1, 1 + 7 * i), e, font=FONT, fill=(250, 250, 250))
-            i += 1
-        images.append(img)
+    img = Image.new("RGBA", (IMG_WIDTH, IMG_HEIGHT), color=(0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+
+    for i, e in enumerate(events):
+        d.text((1, 1 + (7 * (i % 4))), e, font=FONT, fill=(250, 250, 250))
+        logging.debug(f"drawing at {1 + (7 * (i % 4))}: {e}")
+
+        if (i + 1) % NUMBER_OF_LINES == 0 or i == len(events) - 1:
+            # drawn all the lines for one image; save this one and start a new image
+            images.append(img)
+            img = Image.new("RGBA", (IMG_WIDTH, IMG_HEIGHT), color=(0, 0, 0, 0))
+            d = ImageDraw.Draw(img)
 
     if images:
         logging.debug(f"saving image {image_name}")
@@ -202,8 +198,8 @@ def main():
     events = fetch_events(hours=args.hours)
     if events:
         logging.debug("posting events to Tidbyt")
-        # draw_image(events, EVENTS_PIC)
-        draw_push_in(events, EVENTS_PIC)
+        draw_image(events, EVENTS_PIC)
+        # draw_push_in(events, EVENTS_PIC)
         post_image(EVENTS_PIC)
     else:
         logging.debug("no events to post")
