@@ -6,7 +6,7 @@ I wanted to be able to put events from several of my family's shared calendars u
 
 - a working python, version 3 or higher (virtualenv optional)
 - the python modules listed in `requirements.txt` (i.e. `pip install -r requirements.txt`)
-- a config/secrets file called `tidbyt.yaml`, with four values in it:
+- a config/secrets file called `tidbyt.yaml`, with the following values in it:
   - `tidbyt_installation`: the installation ID for the app you're installing, which can be any arbitrary string
   - `tidbyt_id`: the ID of your Tidbyt display, as acquired from your Tidbyt mobile app
   - `tidbyt_key`: the authentication key for your Tidbyt, also acquired from your Tidbyt mobile app
