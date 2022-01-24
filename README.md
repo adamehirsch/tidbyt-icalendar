@@ -11,6 +11,7 @@ I wanted to be able to put events from several of my family's shared calendars u
   - `tidbyt_id`: the ID of your Tidbyt display, as acquired from your Tidbyt mobile app
   - `tidbyt_key`: the authentication key for your Tidbyt, also acquired from your Tidbyt mobile app
   - `calendars`: a list of URLs to ICS (iCalendar) records you'd like the script to look at when it runs
+    - If you're using Google Calendar, you'll find that individual calendars have a settings value called "Secret Address in iCal format" -- that's what I'm using here.
 
 ## How to use it
 
