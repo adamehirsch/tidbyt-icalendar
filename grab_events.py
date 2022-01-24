@@ -12,7 +12,8 @@ import arrow
 import recurring_ical_events
 import requests
 from icalendar import Calendar
-from PIL import Image, ImageDraw, ImageFont, ImageSequence
+from PIL import Image, ImageDraw, ImageFont
+import yaml
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--hours", type=int, default=24)
@@ -24,14 +25,11 @@ logging.basicConfig(
     level=(logging.DEBUG if args.debug else logging.INFO),
 )
 
-# the "tidbyt_creds.json" file includes some sensitive config variables:
-#  - "tidbyt_installation" string (the installation ID for this app)
-#  - "tidbyt_id" string (the ID for the target Tidbyt display)
-#  - "tidbyt_key" string (the API key to auth for this Tidbyt)
-#  - "calendars" a list of iCalendar URLs to poll for events
+with open("tidbyt.yaml") as f:
+    TIDBYT_CREDS = yaml.load(f, Loader=yaml.FullLoader)
 
-TC_FILE = open("tidybt_creds.json")
-TIDBYT_CREDS = json.load(TC_FILE)
+# TC_FILE = open("tidybt_creds.json")
+# TIDBYT_CREDS = json.load(TC_FILE)
 
 DEVICE_ID = TIDBYT_CREDS["tidbyt_id"]
 INSTALLATION_ID = TIDBYT_CREDS["tidbyt_installation"]
@@ -40,7 +38,10 @@ BASE_URL = f"https://api.tidbyt.com/v0/devices/{DEVICE_ID}"
 LIST_URL = f"{BASE_URL}/installations"
 PUSH_URL = f"{BASE_URL}/push"
 
+# Filename to write the single animated events gif
 EVENTS_PIC = "todays_events.gif"
+
+# Fonts
 FONT_FILE = "fonts/4x6.pil"
 FONT = ImageFont.load(FONT_FILE)
 
@@ -49,7 +50,7 @@ IMG_HEIGHT = 32
 
 HEADERS = {
     "Content-Type": "application/json",
-    "Authorization": TIDBYT_CREDS["tidbyt_key"],
+    "Authorization": f"Bearer {TIDBYT_CREDS['tidbyt_key']}",
 }
 
 
