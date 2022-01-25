@@ -19,6 +19,9 @@ I wanted to be able to put events from several of my family's shared calendars u
 
 Run `grab_events.py`. Optionally add a `--hours N` argument, where `N` is the number of hours in the future to look ahead for events. If all goes well, the script will fetch down your events, sort them chronologically, and put some animated gifs on your Tidbyt rotation. If you want to test it and have no events in the next 24 hours, try running it with a longer duration to pick up more events.
 
+I run it at 6 a.m. and 6 p.m. local time, from a cron job. That way when my
+family sits to dinner, we can see upcoming events.
+
 ## Miscellaneous details
 
 - misc fixed fonts came from https://www.cl.cam.ac.uk/~mgk25/ucs-fonts.html, specifically at https://www.cl.cam.ac.uk/~mgk25/download/ucs-fonts.tar.gz
