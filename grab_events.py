@@ -75,7 +75,7 @@ def draw_push_in(events, image_name):
                 img = Image.new("RGBA", (IMG_WIDTH, IMG_HEIGHT), color=(0, 0, 0, 0))
                 d = ImageDraw.Draw(img)
                 for p, e in enumerate(drawing_events):
-                    d.text((64 - n * 4, 1 + 7 * p), e, font=FONT, fill=(250, 250, 250))
+                    d.text((60 - n * 4, 8 * p), e, font=FONT, fill=(250, 250, 250))
                 images.append(img)
             drawing_events = []
 
@@ -198,8 +198,8 @@ def main():
     events = fetch_events(hours=args.hours)
     if events:
         logging.debug("posting events to Tidbyt")
-        draw_image(events, EVENTS_PIC)
-        # draw_push_in(events, EVENTS_PIC)
+        # draw_image(events, EVENTS_PIC)
+        draw_push_in(events, EVENTS_PIC)
         post_image(EVENTS_PIC)
     else:
         logging.debug("no events to post")
