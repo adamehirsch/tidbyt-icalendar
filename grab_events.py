@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-
+import utils
 import argparse
 import base64
 import datetime
@@ -153,44 +153,36 @@ def fetch_events(hours=24):
     printable_events = []
 
     for cal in TIDBYT_CREDS["calendars"]:
-
-        logging.debug(f"==> checking calendar {cal}")
-
-        raw_cal = requests.get(cal).text
-        ical = Calendar.from_ical(raw_cal)
-        events = recurring_ical_events.of(ical).between(now.date(), then.date())
-
-        logging.debug(f" - adding {len(events)} events")
-        all_events += events
+        all_events += utils.fetch_events(cal, now, then)
 
     # sort events by their starttime, coercing dates to datetimes
     all_events.sort(key=always_datetime)
+    return utils.make_printable_events(all_events)
+    # for event in all_events:
+    #     summary = event.decoded("summary").decode("utf-8")
 
-    for event in all_events:
-        summary = event.decoded("summary").decode("utf-8")
+    #     start = event["DTSTART"].dt
+    #     duration = event["DTEND"].dt - event["DTSTART"].dt
 
-        start = event["DTSTART"].dt
-        duration = event["DTEND"].dt - event["DTSTART"].dt
+    #     starttime = ""
+    #     if duration.total_seconds() < 86400:
+    #         starthour = (
+    #             arrow.get(start).to("US/Central").format("h")
+    #             if isinstance(start, datetime.datetime)
+    #             else arrow.get(start).format("h")
+    #         )
+    #         sm = arrow.get(start).to("US/Central").format("mm")
+    #         startminute = "" if sm == "00" else sm
 
-        starttime = ""
-        if duration.total_seconds() < 86400:
-            starthour = (
-                arrow.get(start).to("US/Central").format("h")
-                if isinstance(start, datetime.datetime)
-                else arrow.get(start).format("h")
-            )
-            sm = arrow.get(start).to("US/Central").format("mm")
-            startminute = "" if sm == "00" else sm
+    #         suffix = "p"
+    #         if arrow.get(start).to("US/Central").format("a") == "am":
+    #             suffix = "a"
+    #         starttime += starthour + startminute + suffix + " "
+    #     printable_line = f"{starttime}{summary}"
+    #     logging.debug(f" - Adding event {printable_line}")
+    #     printable_events.append(printable_line)
 
-            suffix = "p"
-            if arrow.get(start).to("US/Central").format("a") == "am":
-                suffix = "a"
-            starttime += starthour + startminute + suffix + " "
-        printable_line = f"{starttime}{summary}"
-        logging.debug(f" - Adding event {printable_line}")
-        printable_events.append(printable_line)
-
-    logging.debug(pformat(printable_events))
+    # logging.debug(pformat(printable_events))
     return printable_events
 
 
