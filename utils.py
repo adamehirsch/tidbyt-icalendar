@@ -1,4 +1,6 @@
 import logging
+from time import time
+from tkinter.tix import X_REGION, Y_REGION
 import requests
 from icalendar import Calendar
 import recurring_ical_events
@@ -15,6 +17,7 @@ with open("tidbyt.yaml") as f:
 
 DEVICE_ID = TIDBYT_CREDS["tidbyt_id"]
 INSTALLATION_ID = TIDBYT_CREDS["tidbyt_installation"]
+LOCALTZ = TIDBYT_CREDS.get("timezone", "US/Central")
 
 BASE_URL = f"https://api.tidbyt.com/v0/devices/{DEVICE_ID}"
 LIST_URL = f"{BASE_URL}/installations"
@@ -23,8 +26,10 @@ PUSH_URL = f"{BASE_URL}/push"
 # Filename to write the single animated events gif
 EVENTS_PIC = "todays_events.gif"
 
+FBCAL = TIDBYT_CREDS["freeBusyCal"]
+
 # Fonts
-FONT_FILE = TIDBYT_CREDS.get("font", "fonts/4x6.pil")
+FONT_FILE = TIDBYT_CREDS.get("font", "fonts/tb-8.pil")
 FONT = ImageFont.load(FONT_FILE)
 NUMBER_OF_LINES = TIDBYT_CREDS.get("number_of_lines", 4)
 
@@ -36,14 +41,54 @@ HEADERS = {
     "Authorization": f"Bearer {TIDBYT_CREDS['tidbyt_key']}",
 }
 
+WEEKDAYS = {"1": "M", "2": "T", "3": "W", "4": "T", "5": "F", "6": "S", "7": "S"}
+
 
 def always_datetime(d):
     return arrow.get(d.decoded("dtstart"))
 
 
 def draw_week_ahead():
-    img = Image.new("RGBA", (IMG_WIDTH, IMG_HEIGHT), color=(0, 0, 0, 0))
+    img = Image.new("RGBA", (IMG_WIDTH, IMG_HEIGHT))
     d = ImageDraw.Draw(img)
+    this_font = ImageFont.load("fonts/6x9.pil")
+
+    for i in range(7):
+        day_of_week = arrow.utcnow().shift(days=i).to("US/Central").format("d")
+        day = WEEKDAYS[day_of_week]
+        d.text(xy=(1 + i * 9, 0), text=day, font=this_font, fill="#333")
+    return img
+
+
+def draw_week_events(img, events):
+    d = ImageDraw.Draw(img)
+
+    tf = arrow.now(LOCALTZ).floor("day")
+
+    for e in events:
+        shift_start = e.decoded("dtstart") - tf
+        shift_end = e.decoded("dtend") - tf
+
+        days_forward = shift_start.days
+        x_start = days_forward * 9
+        x_end = x_start + 7
+
+        hour_start = shift_start.seconds // 3600
+        hour_end = shift_end.seconds // 3600
+        y_start = 8 + hour_start
+        y_end = 8 + hour_end
+
+        if shift_start.days == shift_end.days:
+            # this is a same-day shift; one rectangle
+            d.rounded_rectangle([x_start, y_start, x_end, y_end], fill="#4640ff")
+        else:
+            # draw a rectangle to finish the day
+            d.rounded_rectangle([x_start, y_start, x_end, 32], fill="#4640ff")
+            # and another at the top of the next day, unless it's the last day
+            if shift_end.days < 7:
+                d.rounded_rectangle([x_start + 9, 8, x_end + 9, y_end], fill="#4640ff")
+
+    img.save("test_week.gif")
 
 
 def fetch_events(calendar, start_time, end_time):
@@ -64,7 +109,6 @@ def make_printable_events(events):
 
         start = event["DTSTART"].dt
         duration = event["DTEND"].dt - event["DTSTART"].dt
-        print(summary, event["DTSTART"], event["DTEND"])
         starttime = ""
         # this is a clunky way of differentiating all-day events from ones with hours
         if duration.total_seconds() < 86400:
