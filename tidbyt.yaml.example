@@ -1,7 +1,5 @@
 tidbyt_installation: MyAwesomeCalendarEvents
-
 tidbyt_id: offering-MONITORY-fifteen-pesky-barbital
-
 tidbyt_key: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY.ZZZZZZZZZZZZZ-AAAAAAA
 
 font: fonts/tb-8.pil
@@ -11,3 +9,9 @@ calendars:
   - https://calendar.google.com/calendar/ical/foobarbaz%40group.calendar.google.com/private-31415926535897932384/basic.ics
   - https://calendar.google.com/calendar/ical/bazbarfoo%40group.calendar.google.com/private-27182818284590452353/basic.ics
  
+freeBusyCal: http://www.some-other.calendar/
+freeBusyColor: "#b4b3ff"
+freeBusyInstallation: WorkingCalendar
+freeBusyImage: working.gif
+
+timezone: US/Central

@@ -1,19 +1,18 @@
-import logging
-from time import time
-from tkinter.tix import X_REGION, Y_REGION
-import requests
-from icalendar import Calendar
-import recurring_ical_events
-import arrow
+import base64
 import datetime
-from PIL import Image, ImageDraw, ImageFont
+import json
+import logging
+
+import arrow
+import recurring_ical_events
+import requests
 import yaml
+from icalendar import Calendar
+from PIL import Image, ImageDraw, ImageFont
 
 with open("tidbyt.yaml") as f:
     TIDBYT_CREDS = yaml.load(f, Loader=yaml.FullLoader)
 
-# TC_FILE = open("tidybt_creds.json")
-# TIDBYT_CREDS = json.load(TC_FILE)
 
 DEVICE_ID = TIDBYT_CREDS["tidbyt_id"]
 INSTALLATION_ID = TIDBYT_CREDS["tidbyt_installation"]
@@ -27,6 +26,8 @@ PUSH_URL = f"{BASE_URL}/push"
 EVENTS_PIC = "todays_events.gif"
 
 FBCAL = TIDBYT_CREDS["freeBusyCal"]
+FBCOLOR = TIDBYT_CREDS["freeBusyColor"]
+FBINSTALL = TIDBYT_CREDS["freeBusyInstallation"]
 
 # Fonts
 FONT_FILE = TIDBYT_CREDS.get("font", "fonts/tb-8.pil")
@@ -56,39 +57,8 @@ def draw_week_ahead():
     for i in range(7):
         day_of_week = arrow.utcnow().shift(days=i).to("US/Central").format("d")
         day = WEEKDAYS[day_of_week]
-        d.text(xy=(1 + i * 9, 0), text=day, font=this_font, fill="#333")
+        d.text(xy=(1 + i * 9, 0), text=day, font=this_font, fill="#fdf")
     return img
-
-
-def draw_week_events(img, events):
-    d = ImageDraw.Draw(img)
-
-    tf = arrow.now(LOCALTZ).floor("day")
-
-    for e in events:
-        shift_start = e.decoded("dtstart") - tf
-        shift_end = e.decoded("dtend") - tf
-
-        days_forward = shift_start.days
-        x_start = days_forward * 9
-        x_end = x_start + 7
-
-        hour_start = shift_start.seconds // 3600
-        hour_end = shift_end.seconds // 3600
-        y_start = 8 + hour_start
-        y_end = 8 + hour_end
-
-        if shift_start.days == shift_end.days:
-            # this is a same-day shift; one rectangle
-            d.rounded_rectangle([x_start, y_start, x_end, y_end], fill="#4640ff")
-        else:
-            # draw a rectangle to finish the day
-            d.rounded_rectangle([x_start, y_start, x_end, 32], fill="#4640ff")
-            # and another at the top of the next day, unless it's the last day
-            if shift_end.days < 7:
-                d.rounded_rectangle([x_start + 9, 8, x_end + 9, y_end], fill="#4640ff")
-
-    img.save("test_week.gif")
 
 
 def fetch_events(calendar, start_time, end_time):
@@ -128,3 +98,27 @@ def make_printable_events(events):
         logging.debug(f" - Adding event {printable_line}")
         printable_events.append(printable_line)
     return printable_events
+
+
+def post_image(image_name, installation_id):
+
+    with open(image_name, "rb") as open_file:
+        byte_content = open_file.read()
+
+        payload = json.dumps(
+            {
+                "image": base64.b64encode(byte_content).decode("utf-8"),
+                "installationID": installation_id,
+                "background": False,
+            }
+        )
+
+        requests.request("POST", PUSH_URL, data=payload, headers=HEADERS)
+
+
+def remove_installation(name):
+    requests.request(
+        "DELETE",
+        f"https://api.tidbyt.com/v0/devices/{DEVICE_ID}/installations/{name}",
+        headers=HEADERS,
+    )
