@@ -57,7 +57,11 @@ def draw_week_ahead():
     for i in range(7):
         day_of_week = arrow.utcnow().shift(days=i).to("US/Central").format("d")
         day = WEEKDAYS[day_of_week]
-        d.text(xy=(1 + i * 9, 0), text=day, font=this_font, fill="#fdf")
+        xpos = 1 + i * 9
+        d.text(xy=(xpos, 0), text=day, font=this_font, fill="#fdf")
+        # highlight the weekend days
+        if day == "S":
+            d.rectangle(xy=[xpos - 2, 10, xpos + 6, 32], fill="#094f19")
     return img
 
 

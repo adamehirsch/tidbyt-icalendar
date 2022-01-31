@@ -55,15 +55,19 @@ def draw_week_events(img, events, image_name):
             # and another at the top of the next day, unless it's the last day
             if shift_end.days < 7:
                 d.rectangle([x_start + 9, 8, x_end + 9, y_end], fill=FBCOLOR)
-        d.text(
-            xy=(
-                x_start + (2 if (shift_duration.seconds // 3600) < 10 else 0),
-                y_start - 6,
-            ),
-            text=str(shift_duration.seconds // 3600),
-            font=teenyfont,
-            fill="#fff",
-        )
+        # this is meant to put the length of the shift above the block.
+        # Don't insert it if the column starts too high (for a weirdly early shift start)
+        if y_start > 14:
+            d.text(
+                xy=(
+                    # center single digits over the column
+                    x_start + (2 if (shift_duration.seconds // 3600) < 10 else 0),
+                    y_start - 6,
+                ),
+                text=str(shift_duration.seconds // 3600),
+                font=teenyfont,
+                fill="#fff",
+            )
     img.save(image_name)
 
 
