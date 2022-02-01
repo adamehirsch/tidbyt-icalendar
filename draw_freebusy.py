@@ -38,6 +38,8 @@ def draw_week_events(img, events, image_name):
         shift_duration = e.decoded("dtend") - e.decoded("dtstart")
 
         days_forward = shift_start.days
+        if days_forward > 6:
+            continue
         x_start = days_forward * 9
         x_end = x_start + 6
 
