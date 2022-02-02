@@ -44,8 +44,8 @@ def draw_week_events(img, events, image_name):
 
         days_forward = shift_start.days
 
-        x_start = days_forward * 9
-        x_end = x_start + 6
+        x_start = days_forward * 9 + 1
+        x_end = x_start + 7
 
         hour_start = shift_start.seconds // 3600
         hour_end = shift_end.seconds // 3600
