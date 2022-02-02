@@ -60,12 +60,10 @@ def draw_week_ahead():
         xpos = 2 + i * 9
         fill = "#FDF"
         if day == "S":
+            # highlight the weekend days with a background color
             d.rectangle(xy=[xpos - 1, 0, xpos + 6, 7], fill="#187d27")
             fill = "#ddffe2"
         d.text(xy=(xpos, 0), text=day, font=this_font, fill=fill)
-        # highlight the weekend days with a background color
-        # if day == "S":
-        #     d.rectangle(xy=[xpos - 2, 8, xpos + 6, 32], fill="#176623")
     return img
 
 

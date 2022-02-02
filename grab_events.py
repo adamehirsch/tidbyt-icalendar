@@ -23,7 +23,7 @@ def draw_push_in(events, image_name):
     # this function makes a splashy sidways-pull-in image
     images = []
     # the durations of the animation steps
-    durations = [75] * 12 + [125] * 3 + [4000]
+    durations = [60] * 10 + [100] * 3 + [125] + [175] + [6000]
 
     drawing_events = []
     for i, e in enumerate(events):
@@ -55,7 +55,7 @@ def draw_push_in(events, image_name):
         append_images=images[1:],
         optimize=False,
         duration=durations * (i + 1),
-        loop=1,
+        loop=2,
     )
 
     return images
@@ -79,7 +79,7 @@ def fetch_events(hours=24):
 def main():
     events = fetch_events(hours=args.hours)
     if events:
-        logging.debug("posting events to Tidbyt")
+        logging.debug(f"posting events to Tidbyt at {utils.INSTALLATION_ID}")
         draw_push_in(events, utils.EVENTS_PIC)
         utils.post_image(utils.EVENTS_PIC, utils.INSTALLATION_ID)
     else:
