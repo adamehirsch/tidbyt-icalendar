@@ -68,13 +68,18 @@ def draw_week_ahead():
 
 
 def fetch_events(calendar, start_time, end_time):
-    logging.debug(f"==> checking calendar {calendar}")
+    logging.debug(f"==> checking calendar {calendar} from {start_time} to {end_time}")
 
     raw_cal = requests.get(calendar).text
     ical = Calendar.from_ical(raw_cal)
-    events = recurring_ical_events.of(ical).between(start_time.date(), end_time.date())
+    events = recurring_ical_events.of(ical).between(start_time, end_time)
 
     logging.debug(f" - adding {len(events)} events")
+    for e in events:
+        logging.debug(
+            f"{e.decoded('dtstart')} {e.decoded('dtend')} "
+            f"{e.decoded('summary').decode('utf-8')}"
+        )
     return events
 
 

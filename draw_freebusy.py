@@ -78,7 +78,11 @@ def draw_week_events(img, events, image_name):
 
 
 def main():
-    fb_events = utils.fetch_events(FBCAL, arrow.utcnow(), arrow.utcnow().shift(days=7))
+    fb_events = utils.fetch_events(
+        FBCAL,
+        arrow.now(utils.LOCALTZ).floor("day"),
+        arrow.now(utils.LOCALTZ).shift(days=6).ceil("day"),
+    )
     if fb_events:
         image_name = utils.TIDBYT_CREDS.get("freeBusyImage", "working.gif")
         logging.debug("posting events to Tidbyt")
