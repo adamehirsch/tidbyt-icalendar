@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 import argparse
-import datetime
+from datetime import datetime, timezone, timedelta
 import logging
+import arrow
 
 from PIL import Image, ImageDraw
 
@@ -63,16 +64,17 @@ def draw_push_in(events, image_name):
 
 def fetch_events(hours=24):
 
-    now = datetime.datetime.utcnow()
-    then = now + datetime.timedelta(hours=hours)
+    now = arrow.now()
+    then = now + timedelta(hours=hours)
 
     all_events = []
 
     for cal in utils.TIDBYT_CREDS["calendars"]:
-        all_events += utils.fetch_events(cal, now, then)
+        all_events += utils.fetch_events(cal, now.datetime, then.datetime)
 
     # sort events by their starttime, coercing dates to datetimes
     all_events.sort(key=utils.always_datetime)
+    logging.debug(all_events)
     return utils.make_printable_events(all_events)
 
 
