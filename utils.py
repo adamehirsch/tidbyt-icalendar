@@ -73,6 +73,7 @@ def fetch_events(calendar, start_time, end_time):
     raw_cal = requests.get(calendar).text
     ical = Calendar.from_ical(raw_cal)
     events = recurring_ical_events.of(ical).between(start_time, end_time)
+    events.sort(key=always_datetime)
 
     logging.debug(f" - adding {len(events)} events")
     for e in events:
@@ -81,6 +82,14 @@ def fetch_events(calendar, start_time, end_time):
             f"{e.decoded('summary').decode('utf-8')}"
         )
     return events
+
+
+def get_event_times(e, day_start):
+    shift_start = e.decoded("dtstart") - day_start
+    shift_end = e.decoded("dtend") - day_start
+    shift_duration = e.decoded("dtend") - e.decoded("dtstart")
+    logging.debug(f"{shift_start} {shift_end} {shift_duration} {e.decoded('summary')}")
+    return shift_start, shift_end, shift_duration
 
 
 def make_printable_events(events):

@@ -31,19 +31,11 @@ def draw_week_events(img, events, image_name):
 
     tf = arrow.now(utils.LOCALTZ).floor("day")
 
-    for e in events:
-        shift_start = e.decoded("dtstart") - tf
-
-        # only draw 7 days of events
-        if shift_start.days > 6:
-            continue
-
-        shift_end = e.decoded("dtend") - tf
-
-        shift_duration = e.decoded("dtend") - e.decoded("dtstart")
-        logging.debug(f"{shift_start} {shift_end} {e.decoded('summary')}")
+    for i, e in enumerate(events):
+        shift_start, shift_end, shift_duration = utils.get_event_times(e, tf)
         days_forward = shift_start.days
 
+        # position the busy-blocks
         x_start = days_forward * 9 + 1
         x_end = x_start + 7
 
@@ -67,14 +59,23 @@ def draw_week_events(img, events, image_name):
         if y_start > 14:
             text_x = x_start + (2 if (shift_duration.seconds // 3600) < 10 else 0)
             text_y = y_start - 6
-            # if img.getpixel((text_x, text_y)) != (0, 0, 0, 0):
-            #     continue
-            # print(
-            #     "PIX VALUE:",
-            #     img.getpixel((text_x, text_y)),
-            #     e.decoded("dtstart"),
-            #     e.decoded("summary"),
-            # )
+
+            hours_length = shift_duration.seconds // 3600
+
+            # is there another event immediately after this one?
+            if len(events) > i + 1:
+                next_event = events[i + 1]
+                next_start, next_end, next_duration = utils.get_event_times(
+                    next_event, tf
+                )
+                if shift_end == next_start:
+                    # the next shift starts immediately after the current one; sigh
+                    hours_length += next_duration.seconds // 3600
+
+            # Only draw the hours-length if the pixel isn't already drawn on
+            if img.getpixel((text_x, text_y)) != (0, 0, 0, 0):
+                logging.debug("skipping drawing hours on populated pixel")
+                continue
 
             d.text(
                 xy=(
@@ -82,7 +83,7 @@ def draw_week_events(img, events, image_name):
                     text_x,
                     text_y,
                 ),
-                text=str(shift_duration.seconds // 3600),
+                text=str(hours_length),
                 font=teenyfont,
                 fill="#fff",
             )
