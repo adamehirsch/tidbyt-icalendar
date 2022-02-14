@@ -103,15 +103,15 @@ def make_printable_events(events):
         # this is a clunky way of differentiating all-day events from ones with hours
         if duration.total_seconds() < 86400:
             starthour = (
-                arrow.get(start).to("US/Central").format("h")
+                arrow.get(start).to(LOCALTZ).format("h")
                 if isinstance(start, datetime.datetime)
                 else arrow.get(start).format("h")
             )
-            sm = arrow.get(start).to("US/Central").format("mm")
+            sm = arrow.get(start).to(LOCALTZ).format("mm")
             startminute = "" if sm == "00" else sm
 
             suffix = "p"
-            if arrow.get(start).to("US/Central").format("a") == "am":
+            if arrow.get(start).to(LOCALTZ).format("a") == "am":
                 suffix = "a"
             starttime += starthour + startminute + suffix + " "
         printable_line = f"{starttime}{summary}"
