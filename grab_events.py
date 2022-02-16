@@ -66,7 +66,7 @@ def fetch_events(hours=24):
 
     now = arrow.now()
     then = now + timedelta(hours=hours)
-
+    logging.debug(f"now: {now} then {then}")
     all_events = []
 
     for cal in utils.TIDBYT_CREDS["calendars"]:
@@ -74,7 +74,12 @@ def fetch_events(hours=24):
 
     # sort events by their starttime, coercing dates to datetimes
     all_events.sort(key=utils.always_datetime)
-    logging.debug(all_events)
+    sorted_events = ""
+    for e in all_events:
+        sorted_events += (
+            f"\t{e.decoded('dtstart')} {e.decoded('dtend')} {e.decoded('summary')}\n"
+        )
+    logging.debug(f"ALL SORTED EVENTS: \n{sorted_events}")
     return utils.make_printable_events(all_events)
 
 
