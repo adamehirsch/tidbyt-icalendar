@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+import re
 
 import arrow
 from PIL import ImageDraw, ImageFont
@@ -32,6 +33,10 @@ def draw_week_events(img, events, image_name):
     tf = arrow.now(utils.LOCALTZ).floor("day")
 
     for i, e in enumerate(events):
+        if re.search(r"moonlighting", str(e.decoded("summary")), re.IGNORECASE):
+            logging.debug("Skipping Moonlighting shift because they don't draw well")
+            continue
+
         shift_start, shift_end, shift_duration = utils.get_event_times(e, tf)
         days_forward = shift_start.days
 
@@ -59,8 +64,10 @@ def draw_week_events(img, events, image_name):
         if y_start > 14:
             text_x = x_start + (2 if (shift_duration.seconds // 3600) < 10 else 0)
             text_y = y_start - 6
-
             hours_length = shift_duration.seconds // 3600
+            logging.debug(
+                f"text coords: {text_x} {text_y} length: {hours_length} duration {shift_duration}"
+            )
 
             # is there another event immediately after this one?
             if len(events) > i + 1:
