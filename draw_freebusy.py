@@ -9,9 +9,10 @@ from PIL import ImageDraw, ImageFont
 
 import utils
 
-FBCAL = utils.TIDBYT_CREDS["freeBusyCal"]
-FBCOLOR = utils.TIDBYT_CREDS["freeBusyColor"]
-FBINSTALL = utils.TIDBYT_CREDS["freeBusyInstallation"]
+FBCAL = utils.TIDBYT_CREDS["freebusy"]["calendars"]
+FBCOLOR = utils.TIDBYT_CREDS["freebusy"]["color"]
+FBINSTALL = utils.TIDBYT_CREDS["freebusy"]["installation"]
+FBFONT = utils.TIDBYT_CREDS["freebusy"]["font"]
 
 # Meant to read events from one calendar and draw them as solid blocks of
 # color on a 7-day x 24 hour calendar on the bottom 24 pixels of the display
@@ -26,18 +27,39 @@ logging.basicConfig(
 )
 
 
+def get_next_event_duration(events, index, shift_end):
+    if len(events) <= index:
+        return 0
+
+    next_event = events[index + 1]
+    next_start, _, next_duration = utils.get_event_times(
+        next_event, day_start=arrow.now(utils.LOCALTZ).floor("day")
+    )
+
+    if shift_end == next_start:
+        # the next shift starts immediately after the current one; sigh
+        return next_duration.seconds // 3600
+    return 0
+
+
+def prev_event_adjacent(events, index):
+    if index == 0:
+        return False
+    day_start = arrow.now(utils.LOCALTZ).floor("day")
+    prev_event = events[index - 1]
+    _, prev_end, _ = utils.get_event_times(prev_event, day_start)
+    shift_start, _, _ = utils.get_event_times(events[index], day_start)
+    return True if shift_start == prev_end else False
+
+
 def draw_week_events(img, events, image_name):
     d = ImageDraw.Draw(img)
-    teenyfont = ImageFont.load("fonts/4x6.pil")
+    teenyfont = ImageFont.load(FBFONT)
 
-    tf = arrow.now(utils.LOCALTZ).floor("day")
+    day_start = arrow.now(utils.LOCALTZ).floor("day")
 
     for i, e in enumerate(events):
-        if re.search(r"moonlighting", str(e.decoded("summary")), re.IGNORECASE):
-            logging.debug("Skipping Moonlighting shift because they don't draw well")
-            continue
-
-        shift_start, shift_end, shift_duration = utils.get_event_times(e, tf)
+        shift_start, shift_end, shift_duration = utils.get_event_times(e, day_start)
         days_forward = shift_start.days
 
         # position the busy-blocks
@@ -60,24 +82,18 @@ def draw_week_events(img, events, image_name):
                 d.rectangle([x_start + 9, 8, x_end + 9, y_end], fill=FBCOLOR)
 
         # this is meant to put the length of the shift above the block.
-        # Don't insert it if the column starts too high (for a weirdly early shift start)
-        if y_start > 14:
-            text_x = x_start + (2 if (shift_duration.seconds // 3600) < 10 else 0)
+        # Don't insert it if the column starts too high (for a weirdly early shift start) or if there was an immediately preceding shift
+        if y_start > 14 and not prev_event_adjacent(events, i):
+            hours_length = shift_duration.days * 86400 + shift_duration.seconds // 3600
+            # is there another event immediately after this one? Draw the total time.
+            hours_length += get_next_event_duration(events, i, shift_end)
+
+            text_x = x_start + (2 if hours_length < 10 else 0)
             text_y = y_start - 6
-            hours_length = shift_duration.seconds // 3600
+
             logging.debug(
                 f"text coords: {text_x} {text_y} length: {hours_length} duration {shift_duration}"
             )
-
-            # is there another event immediately after this one?
-            if len(events) > i + 1:
-                next_event = events[i + 1]
-                next_start, next_end, next_duration = utils.get_event_times(
-                    next_event, tf
-                )
-                if shift_end == next_start:
-                    # the next shift starts immediately after the current one; sigh
-                    hours_length += next_duration.seconds // 3600
 
             # Only draw the hours-length if the pixel isn't already drawn on
             if img.getpixel((text_x, text_y)) != (0, 0, 0, 0):
@@ -94,6 +110,7 @@ def draw_week_events(img, events, image_name):
                 font=teenyfont,
                 fill="#fff",
             )
+
     img.save(image_name)
 
 
@@ -102,9 +119,10 @@ def main():
         FBCAL,
         arrow.now(utils.LOCALTZ).floor("day"),
         arrow.now(utils.LOCALTZ).shift(days=6).ceil("day"),
+        skip_text=utils.TIDBYT_CREDS["freebusy"].get("skip_text", ""),
     )
     if fb_events:
-        image_name = utils.TIDBYT_CREDS.get("freeBusyImage", "working.gif")
+        image_name = utils.TIDBYT_CREDS["freebusy"].get("image", "working.gif")
         logging.debug("posting events to Tidbyt")
         week_image = utils.draw_week_ahead()
         draw_week_events(

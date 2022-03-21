@@ -2,6 +2,7 @@ import base64
 import datetime
 import json
 import logging
+import re
 
 import arrow
 import recurring_ical_events
@@ -24,10 +25,6 @@ PUSH_URL = f"{BASE_URL}/push"
 
 # Filename to write the single animated events gif
 EVENTS_PIC = "todays_events.gif"
-
-FBCAL = TIDBYT_CREDS["freeBusyCal"]
-FBCOLOR = TIDBYT_CREDS["freeBusyColor"]
-FBINSTALL = TIDBYT_CREDS["freeBusyInstallation"]
 
 # Fonts
 FONT_FILE = TIDBYT_CREDS.get("font", "fonts/tb-8.pil")
@@ -67,13 +64,24 @@ def draw_week_ahead():
     return img
 
 
-def fetch_events(calendar, start_time, end_time):
+def fetch_events(calendar, start_time, end_time, skip_text=""):
     logging.debug(f"==> checking calendar {calendar} from {start_time} to {end_time}")
 
     raw_cal = requests.get(calendar).text
     ical = Calendar.from_ical(raw_cal)
     events = recurring_ical_events.of(ical).between(start_time, end_time)
     events.sort(key=always_datetime)
+
+    if skip_text:
+        logging.debug(f"Knocking out events with text '{skip_text}'")
+        events = list(
+            filter(
+                lambda e: (
+                    not re.search(skip_text, str(e.decoded("summary")), re.IGNORECASE)
+                ),
+                events,
+            )
+        )
 
     logging.debug(f" - adding {len(events)} events")
     for e in events:
