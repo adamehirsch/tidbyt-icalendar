@@ -28,7 +28,7 @@ logging.basicConfig(
 
 
 def get_next_event_duration(events, index, shift_end):
-    if len(events) <= index:
+    if len(events) - 1 == index:
         return 0
 
     next_event = events[index + 1]
