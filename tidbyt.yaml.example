@@ -18,3 +18,13 @@ freebusy:
   image: working.gif
   skip_text: moonlight
   font: fonts/4x6.pil
+
+  chore_wheel:
+  people:
+    - Larry
+    - Tom
+    - Aramis
+  chores:
+    - Set
+    - Cats
+    - Wipe

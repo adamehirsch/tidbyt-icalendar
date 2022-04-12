@@ -19,6 +19,9 @@ DEVICE_ID = TIDBYT_CREDS["tidbyt_id"]
 INSTALLATION_ID = TIDBYT_CREDS["tidbyt_installation"]
 LOCALTZ = TIDBYT_CREDS.get("timezone", "US/Central")
 
+CHOREWHEEL = TIDBYT_CREDS.get("chore_wheel", None)
+
+
 BASE_URL = f"https://api.tidbyt.com/v0/devices/{DEVICE_ID}"
 LIST_URL = f"{BASE_URL}/installations"
 PUSH_URL = f"{BASE_URL}/push"
