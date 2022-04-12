@@ -7,10 +7,10 @@ timezone: US/Central
 font: fonts/tb-8.pil
 number_of_lines: 4
 
-calendars: 
+calendars:
   - https://calendar.google.com/calendar/ical/foobarbaz%40group.calendar.google.com/private-31415926535897932384/basic.ics
   - https://calendar.google.com/calendar/ical/bazbarfoo%40group.calendar.google.com/private-27182818284590452353/basic.ics
- 
+
 freebusy:
   calendars: https://calendar.google.com/calendar/ical/foobarbaz%40group.calendar.google.com/private-XXXX897932384/basic.ics
   color: "#b4b3ff"
@@ -19,7 +19,8 @@ freebusy:
   skip_text: moonlight
   font: fonts/4x6.pil
 
-  chore_wheel:
+chore_wheel:
+  installation: ChoreWheel
   people:
     - Larry
     - Tom

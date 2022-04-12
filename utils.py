@@ -43,6 +43,18 @@ HEADERS = {
 }
 
 WEEKDAYS = {"1": "M", "2": "T", "3": "W", "4": "T", "5": "F", "6": "S", "7": "S"}
+NOW = arrow.utcnow().to(TIDBYT_CREDS.get("timezone", "US/Central"))
+
+DIVERGING_COLORS = [
+    (127, 201, 127),
+    (190, 174, 212),
+    (253, 192, 134),
+    (255, 255, 153),
+    (56, 108, 176),
+    (240, 2, 127),
+    (191, 91, 23),
+    (102, 102, 102),
+]
 
 
 def always_datetime(d):
