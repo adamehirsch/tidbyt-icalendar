@@ -2,7 +2,6 @@
 
 import argparse
 import logging
-from datetime import datetime, timedelta, timezone
 
 import arrow
 from PIL import Image, ImageDraw
