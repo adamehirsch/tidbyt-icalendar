@@ -10,6 +10,7 @@ import utils
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-d", "--debug", action="store_true", default=False)
+parser.add_argument("-r", "--remove", action="store_true", default=False)
 args = parser.parse_args()
 
 logging.basicConfig(
@@ -72,7 +73,10 @@ def draw_chore_wheel(image_name, people, chores):
 def main():
     chore_image = "chorewheel.gif"
     chore_installation = chore_config.get("installation", "chore_wheel")
-    if chore_config.get("people") and chore_config.get("chores"):
+    if args.remove:
+        logging.debug("removing")
+        utils.remove_installation(chore_installation)
+    elif chore_config.get("people") and chore_config.get("chores"):
         logging.debug(f"posting chores to Tidbyt at {utils.INSTALLATION_ID}")
         draw_chore_wheel(chore_image, chore_config["people"], chore_config["chores"])
         utils.post_image(chore_image, chore_installation)
