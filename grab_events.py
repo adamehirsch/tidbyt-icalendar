@@ -76,9 +76,7 @@ def fetch_events(hours=24):
     all_events.sort(key=utils.always_datetime)
     sorted_events = ""
     for e in all_events:
-        sorted_events += (
-            f"\t{e.decoded('dtstart')} {e.decoded('dtend')} {e.decoded('summary')}\n"
-        )
+        sorted_events += f"\t{e.start} {e.end} {e.summary}\n"
     logging.debug(f"ALL SORTED EVENTS: \n{sorted_events}")
     return utils.make_printable_events(all_events)
 

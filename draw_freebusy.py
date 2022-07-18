@@ -2,7 +2,6 @@
 
 import argparse
 import logging
-import re
 
 import arrow
 from PIL import ImageDraw, ImageFont
@@ -14,7 +13,7 @@ FBCOLOR = utils.TIDBYT_CREDS["freebusy"]["color"]
 FBINSTALL = utils.TIDBYT_CREDS["freebusy"]["installation"]
 FBFONT = utils.TIDBYT_CREDS["freebusy"]["font"]
 
-# Meant to read events from one calendar and draw them as solid blocks of
+# Reads events from a single ical-format calendar and draw them as solid blocks of
 # color on a 7-day x 24 hour calendar on the bottom 24 pixels of the display
 
 parser = argparse.ArgumentParser()
@@ -84,7 +83,12 @@ def draw_week_events(img, events, image_name):
         # this is meant to put the length of the shift above the block.
         # Don't insert it if the column starts too high (for a weirdly early shift start) or if there was an immediately preceding shift
         if y_start > 14 and not prev_event_adjacent(events, i):
-            hours_length = shift_duration.days * 86400 + shift_duration.seconds // 3600
+            logging.debug(
+                f"SHIFT DURATION: DAYS {shift_duration.days} SECONDS {shift_duration.seconds}"
+            )
+            hours_length = (
+                shift_duration.days * 86400 + shift_duration.seconds
+            ) // 3600
             # is there another event immediately after this one? Draw the total time.
             hours_length += get_next_event_duration(events, i, shift_end)
 
@@ -92,7 +96,8 @@ def draw_week_events(img, events, image_name):
             text_y = y_start - 6
 
             logging.debug(
-                f"text coords: {text_x} {text_y} length: {hours_length} duration {shift_duration}"
+                f"text coords: {text_x} {text_y} length: {hours_length} "
+                f"duration {shift_duration}"
             )
 
             # Only draw the hours-length if the pixel isn't already drawn on
@@ -117,8 +122,8 @@ def draw_week_events(img, events, image_name):
 def main():
     fb_events = utils.fetch_events(
         FBCAL,
-        arrow.now(utils.LOCALTZ).floor("day"),
-        arrow.now(utils.LOCALTZ).shift(days=6).ceil("day"),
+        arrow.now(utils.LOCALTZ).floor("day").datetime,
+        arrow.now(utils.LOCALTZ).shift(days=6).ceil("day").datetime,
         skip_text=utils.TIDBYT_CREDS["freebusy"].get("skip_text", ""),
     )
     if fb_events:

@@ -5,11 +5,13 @@ import logging
 import re
 
 import arrow
-import recurring_ical_events
 import requests
 import yaml
-from icalendar import Calendar
+import pytz
 from PIL import Image, ImageDraw, ImageFont
+
+from icalevents.icalevents import events
+
 
 with open("tidbyt.yaml") as f:
     TIDBYT_CREDS = yaml.load(f, Loader=yaml.FullLoader)
@@ -58,7 +60,7 @@ DIVERGING_COLORS = [
 
 
 def always_datetime(d):
-    return arrow.get(d.decoded("dtstart"))
+    return arrow.get(d.start)
 
 
 def draw_week_ahead():
@@ -82,46 +84,58 @@ def draw_week_ahead():
 def fetch_events(calendar, start_time, end_time, skip_text=""):
     logging.debug(f"==> checking calendar {calendar} from {start_time} to {end_time}")
 
-    raw_cal = requests.get(calendar).text
-    ical = Calendar.from_ical(raw_cal)
-    events = recurring_ical_events.of(ical).between(start_time, end_time)
-    events.sort(key=always_datetime)
+    all_events = events(calendar, start=start_time, end=end_time)
+    logging.debug(f"EVENTS: {all_events}")
 
     if skip_text:
         logging.debug(f"Knocking out events with text '{skip_text}'")
-        events = list(
+        all_events = list(
             filter(
-                lambda e: (
-                    not re.search(skip_text, str(e.decoded("summary")), re.IGNORECASE)
-                ),
-                events,
+                lambda e: (not re.search(skip_text, str(e.description), re.IGNORECASE)),
+                all_events,
             )
         )
 
-    logging.debug(f" - adding {len(events)} events")
-    for e in events:
-        logging.debug(
-            f"{e.decoded('dtstart')} {e.decoded('dtend')} "
-            f"{e.decoded('summary').decode('utf-8')}"
-        )
-    return events
+    logging.debug("fixing all-day events")
+
+    all_day_events = list(filter(lambda e: (e.all_day), all_events))
+    all_events = list(filter(lambda e: (not e.all_day), all_events))
+
+    for e in all_day_events:
+        logging.debug(f"ALL DAY {e.start} {e.end}")
+        if e.start.tzinfo is None:
+            e.start = pytz.timezone(LOCALTZ).localize(e.start)
+        if e.end.tzinfo is None:
+            e.end = pytz.timezone(LOCALTZ).localize(e.end)
+
+    for e in all_events:
+        for all_day in all_day_events:
+            if all_day.start <= e.start <= all_day.end:
+                logging.debug(f"FOUND ALL-DAY EVENT: {all_day.start} {e.start}")
+                e.end = e.start + datetime.timedelta(hours=24)
+
+    logging.debug(f" - adding {len(all_events)} events")
+    for e in all_events:
+        logging.debug(f"{e.start} {e.end} " f"{e.description}")
+    return all_events
 
 
 def get_event_times(e, day_start):
-    shift_start = e.decoded("dtstart") - day_start
-    shift_end = e.decoded("dtend") - day_start
-    shift_duration = e.decoded("dtend") - e.decoded("dtstart")
-    logging.debug(f"{shift_start} {shift_end} {shift_duration} {e.decoded('summary')}")
+    logging.debug(f"{e.start} {e.end} {day_start}")
+    shift_start = e.start - day_start
+    shift_end = e.end - day_start
+    shift_duration = e.end - e.start
+    logging.debug(f"{shift_start} {shift_end} {shift_duration} {e.description}")
     return shift_start, shift_end, shift_duration
 
 
 def make_printable_events(events):
     printable_events = []
     for event in events:
-        summary = event.decoded("summary").decode("utf-8")
+        summary = event.summary
 
-        start = event["DTSTART"].dt
-        duration = event["DTEND"].dt - event["DTSTART"].dt
+        start = event.start
+        duration = event.end - event.start
         starttime = ""
         # this is a clunky way of differentiating all-day events from ones with hours
         if duration.total_seconds() < 86400:
