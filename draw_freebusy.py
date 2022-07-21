@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+import math
 
 import arrow
 from PIL import ImageDraw, ImageFont
@@ -86,9 +87,10 @@ def draw_week_events(img, events, image_name):
             logging.debug(
                 f"SHIFT DURATION: DAYS {shift_duration.days} SECONDS {shift_duration.seconds}"
             )
-            hours_length = (
-                shift_duration.days * 86400 + shift_duration.seconds
-            ) // 3600
+
+            hours_length = round(
+                (shift_duration.days * 86400 + shift_duration.seconds) / 3600
+            )
             # is there another event immediately after this one? Draw the total time.
             hours_length += get_next_event_duration(events, i, shift_end)
 
