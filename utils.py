@@ -11,7 +11,7 @@ import pytz
 from PIL import Image, ImageDraw, ImageFont
 
 from icalevents.icalevents import events
-
+from pprint import pformat
 
 with open("tidbyt.yaml") as f:
     TIDBYT_CREDS = yaml.load(f, Loader=yaml.FullLoader)
@@ -96,23 +96,29 @@ def fetch_events(calendar, start_time, end_time, skip_text=""):
             )
         )
 
-    logging.debug("fixing all-day events")
-
-    all_day_events = list(filter(lambda e: (e.all_day), all_events))
-    all_events = list(filter(lambda e: (not e.all_day), all_events))
-
-    for e in all_day_events:
-        logging.debug(f"ALL DAY {e.start} {e.end}")
-        if e.start.tzinfo is None:
-            e.start = pytz.timezone(LOCALTZ).localize(e.start)
-        if e.end.tzinfo is None:
-            e.end = pytz.timezone(LOCALTZ).localize(e.end)
-
     for e in all_events:
-        for all_day in all_day_events:
-            if all_day.start <= e.start <= all_day.end:
-                logging.debug(f"FOUND ALL-DAY EVENT: {all_day.start} {e.start}")
-                e.end = e.start + datetime.timedelta(hours=24)
+        # This is a dippy workaround for a scheduling thing from QGenda, bah,
+        # in which they record an overnight shift as an all_day event. Come on, folks.
+        if e.all_day:
+            e.start = datetime.datetime(
+                e.start.year,
+                e.start.month,
+                e.start.day,
+                16,
+                30,
+                0,
+                tzinfo=pytz.timezone(LOCALTZ),
+            )
+            e.end = datetime.datetime(
+                e.end.year,
+                e.end.month,
+                e.end.day,
+                7,
+                0,
+                0,
+                tzinfo=pytz.timezone(LOCALTZ),
+            )
+            e.all_day = False
 
     logging.debug(f" - adding {len(all_events)} events")
     for e in all_events:
