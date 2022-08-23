@@ -4,8 +4,8 @@ I wanted to be able to put events from several of my family's shared calendars u
 
 ## What you'll need
 
-- a working python, version 3 or higher (virtualenv optional)
-- the python modules listed in `requirements.txt` (i.e. `pip install -r requirements.txt`)
+- a working python, version 3.9 or higher (specified in python-poetry)
+- the python modules listed in pyproject.toml (I'm using python-poetry)
 - a config/secrets file called `tidbyt.yaml`, with the following values in it:
   - `tidbyt_installation`: the installation ID for the app you're installing, which can be any arbitrary string
   - `tidbyt_id`: the ID of your Tidbyt display, as acquired from your Tidbyt mobile app
@@ -30,3 +30,4 @@ family sits to dinner, we can see upcoming events.
    - they're small, so I don't mind putting them in source control.
 - I'm using the Tidbyt PUSH API endpoint as described here: https://tidbyt.dev/docs/tidbyt-api/b3A6MTYyODkwOA-push-to-a-device
   - The Tidbyt devs say this API is a work in progress, and make no commitments to its stability (totally appropriate at this phase of things) so caveat emptor. 
+- The icalevents library needs both a very specific fix version (specified in pyproject.toml) and a minor file update as specified at https://github.com/Herrner/icalevents/pull/2/files -- surely there must be a better way.

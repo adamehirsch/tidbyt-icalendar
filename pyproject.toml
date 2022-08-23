@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "tidbyt"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+requests = "^2.28.1"
+arrow = "^1.2.2"
+Pillow = "9.0.0"
+PyYAML = "^6.0"
+icalevents = { git = "https://github.com/jazzband/icalevents.git", rev = "b7062ab7cb8e4465d1312e304da7367a6df4ec65" }
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
