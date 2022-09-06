@@ -20,6 +20,8 @@ with open("tidbyt.yaml") as f:
 DEVICE_ID = TIDBYT_CREDS["tidbyt_id"]
 INSTALLATION_ID = TIDBYT_CREDS["tidbyt_installation"]
 LOCALTZ = TIDBYT_CREDS.get("timezone", "US/Central")
+local_timezone = pytz.timezone(LOCALTZ)
+
 
 CHOREWHEEL = TIDBYT_CREDS.get("chore_wheel", None)
 
@@ -91,7 +93,10 @@ def fetch_events(calendar, start_time, end_time, skip_text=""):
         logging.debug(f"Knocking out events with text '{skip_text}'")
         all_events = list(
             filter(
-                lambda e: (not re.search(skip_text, str(e.description), re.IGNORECASE)),
+                lambda e: (
+                    not re.search(skip_text, str(e.summary), re.IGNORECASE)
+                    or re.search(skip_text, str(e.description), re.IGNORECASE)
+                ),
                 all_events,
             )
         )
@@ -100,25 +105,14 @@ def fetch_events(calendar, start_time, end_time, skip_text=""):
         # This is a dippy workaround for a scheduling thing from QGenda, bah,
         # in which they record an overnight shift as an all_day event. Come on, folks.
         if e.all_day:
-            e.start = datetime.datetime(
-                e.start.year,
-                e.start.month,
-                e.start.day,
-                16,
-                30,
-                0,
-                tzinfo=pytz.timezone(LOCALTZ),
+            e.start = local_timezone.localize(
+                datetime.datetime(e.start.year, e.start.month, e.start.day, 16, 30, 0)
             )
-            e.end = datetime.datetime(
-                e.end.year,
-                e.end.month,
-                e.end.day,
-                7,
-                0,
-                0,
-                tzinfo=pytz.timezone(LOCALTZ),
+            e.end = local_timezone.localize(
+                datetime.datetime(e.end.year, e.end.month, e.end.day, 7, 0, 0)
             )
             e.all_day = False
+            logging.debug(f"ALL DAY event becomes {e.start} {e.end}")
 
     logging.debug(f" - adding {len(all_events)} events")
     for e in all_events:
