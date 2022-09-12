@@ -4,6 +4,7 @@ import argparse
 from datetime import datetime, timezone, timedelta
 import logging
 import arrow
+import re
 
 from PIL import Image, ImageDraw
 
@@ -40,6 +41,7 @@ def draw_push_in(events, image_name):
                 )
                 d = ImageDraw.Draw(img)
                 for p, e in enumerate(drawing_events):
+                    e = re.sub(u"(\u2018|\u2019)", "'", e)
                     d.text(
                         xy=(60 - n * 4, 8 * p),
                         text=e,
