@@ -103,6 +103,8 @@ def draw_week_events(img, events, image_name):
             )
 
             # Only draw the hours-length if the pixel isn't already drawn on
+            logging.debug(f"x, y: {(text_x, text_y)}")
+
             if img.getpixel((text_x, text_y)) != (0, 0, 0, 0):
                 logging.debug("skipping drawing hours on populated pixel")
                 continue
