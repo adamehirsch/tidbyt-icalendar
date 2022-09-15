@@ -115,6 +115,9 @@ def fetch_events(calendar, start_time, end_time, skip_text=""):
             logging.debug(f"ALL DAY event becomes {e.start} {e.end}")
 
     logging.debug(f" - adding {len(all_events)} events")
+
+    # order by start time
+    all_events.sort(key=lambda e: e.start)
     for e in all_events:
         logging.debug(f"{e.start} {e.end} " f"{e.description}")
     return all_events

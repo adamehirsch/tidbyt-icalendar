@@ -13,6 +13,7 @@ PyYAML = "^6.0"
 icalevents = { git = "https://github.com/jazzband/icalevents.git", rev = "b7062ab7cb8e4465d1312e304da7367a6df4ec65" }
 
 [tool.poetry.dev-dependencies]
+flake8 = "^5.0.4"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

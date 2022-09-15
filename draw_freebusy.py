@@ -35,6 +35,10 @@ def get_next_event_duration(events, index, shift_end):
     next_start, _, next_duration = utils.get_event_times(
         next_event, day_start=arrow.now(utils.LOCALTZ).floor("day")
     )
+    if shift_end == next_start:
+        logging.debug(
+            f"ADJACENT SHIFT shift_end {shift_end} => next_start {next_start} "
+        )
 
     if shift_end == next_start:
         # the next shift starts immediately after the current one; sigh
@@ -82,7 +86,8 @@ def draw_week_events(img, events, image_name):
                 d.rectangle([x_start + 9, 8, x_end + 9, y_end], fill=FBCOLOR)
 
         # this is meant to put the length of the shift above the block.
-        # Don't insert it if the column starts too high (for a weirdly early shift start) or if there was an immediately preceding shift
+        # Don't insert it if the column starts too high (for a weirdly early shift start)
+        # or if there was an immediately preceding shift
         if y_start > 14 and not prev_event_adjacent(events, i):
             logging.debug(
                 f"SHIFT DURATION: DAYS {shift_duration.days} SECONDS {shift_duration.seconds}"
