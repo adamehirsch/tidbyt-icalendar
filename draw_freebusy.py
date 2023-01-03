@@ -4,6 +4,8 @@ import argparse
 import logging
 import math
 
+from pprint import pformat
+
 import arrow
 from PIL import ImageDraw, ImageFont
 
@@ -110,9 +112,13 @@ def draw_week_events(img, events, image_name):
             # Only draw the hours-length if the pixel isn't already drawn on
             logging.debug(f"x, y: {(text_x, text_y)}")
 
-            if img.getpixel((text_x, text_y)) != (0, 0, 0, 0):
-                logging.debug("skipping drawing hours on populated pixel")
-                continue
+            try:
+                if img.getpixel((text_x, text_y)) != (0, 0, 0, 0):
+                    logging.debug("skipping drawing hours on populated pixel")
+                    continue
+            except IndexError:
+                    logging.debug("skipping event outside of start bounds")
+                    continue
 
             d.text(
                 xy=(
